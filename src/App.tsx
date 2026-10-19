@@ -1,5 +1,7 @@
+import { TodoApp } from './components/TodoApp'
+
 function App() {
-  return null
+  return <TodoApp />
 }
 
 export default App

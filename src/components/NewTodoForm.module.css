@@ -1,0 +1,19 @@
+.form {
+  border-bottom: 1px solid var(--border);
+}
+
+.input {
+  width: 100%;
+  padding: 18px 20px;
+  border: 0;
+  background: transparent;
+  font-size: 1.0625rem;
+}
+
+.input::placeholder {
+  color: var(--muted);
+}
+
+.input:focus-visible {
+  outline-offset: -2px;
+}

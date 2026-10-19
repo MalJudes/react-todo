@@ -1,0 +1,40 @@
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.count {
+  min-width: 6.5em;
+}
+
+.filters {
+  display: flex;
+  gap: 4px;
+}
+
+.filter,
+.clear {
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.filter:hover,
+.clear:hover {
+  color: var(--text);
+}
+
+.filter[aria-pressed='true'] {
+  border-color: var(--border);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
