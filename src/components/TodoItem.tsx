@@ -1,5 +1,6 @@
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { Todo } from '../todos/types'
+import { isComposingEnter } from './keyboard'
 import styles from './TodoItem.module.css'
 
 type Props = {
@@ -15,6 +16,17 @@ export function TodoItem({ todo, onToggle, onEdit, onRemove }: Props) {
   // Set once an edit has been saved or cancelled, so the blur that follows
   // when the input unmounts doesn't act on it a second time.
   const finishedRef = useRef(false)
+  const editButtonRef = useRef<HTMLButtonElement>(null)
+  const wasEditingRef = useRef(false)
+
+  // When the edit input unmounts, focus falls to <body>; hand it back to the
+  // Edit button unless the user has already moved focus somewhere else.
+  useEffect(() => {
+    if (wasEditingRef.current && !editing && document.activeElement === document.body) {
+      editButtonRef.current?.focus()
+    }
+    wasEditingRef.current = editing
+  }, [editing])
 
   const startEditing = () => {
     finishedRef.current = false
@@ -30,8 +42,14 @@ export function TodoItem({ todo, onToggle, onEdit, onRemove }: Props) {
   }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter' && !event.nativeEvent.isComposing) finish(true)
-    else if (event.key === 'Escape') finish(false)
+    if (event.key === 'Enter' && !isComposingEnter(event)) {
+      // Focus moves to the Edit button during this keydown; without this,
+      // Enter's default action would then click it and reopen the editor.
+      event.preventDefault()
+      finish(true)
+    } else if (event.key === 'Escape') {
+      finish(false)
+    }
   }
 
   // Distinct keys make React mount a fresh <input> for editing instead of
@@ -53,7 +71,7 @@ export function TodoItem({ todo, onToggle, onEdit, onRemove }: Props) {
   }
 
   return (
-    <li key="view" className={styles.item}>
+    <li key="view" className={styles.item} data-todo-id={todo.id}>
       <input
         type="checkbox"
         className={styles.checkbox}
@@ -71,6 +89,7 @@ export function TodoItem({ todo, onToggle, onEdit, onRemove }: Props) {
         type="button"
         className={styles.action}
         aria-label={`Edit "${todo.title}"`}
+        ref={editButtonRef}
         onClick={startEditing}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">

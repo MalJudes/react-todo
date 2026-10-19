@@ -1,11 +1,13 @@
-import { useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useState, type FormEvent, type KeyboardEvent, type Ref } from 'react'
+import { isComposingEnter } from './keyboard'
 import styles from './NewTodoForm.module.css'
 
 type Props = {
   onAdd: (title: string) => void
+  inputRef?: Ref<HTMLInputElement>
 }
 
-export function NewTodoForm({ onAdd }: Props) {
+export function NewTodoForm({ onAdd, inputRef }: Props) {
   const [title, setTitle] = useState('')
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -16,7 +18,7 @@ export function NewTodoForm({ onAdd }: Props) {
 
   // Enter that confirms an IME composition must not submit the form.
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter' && event.nativeEvent.isComposing) event.preventDefault()
+    if (isComposingEnter(event)) event.preventDefault()
   }
 
   return (
@@ -26,6 +28,7 @@ export function NewTodoForm({ onAdd }: Props) {
       </label>
       <input
         id="new-todo"
+        ref={inputRef}
         className={styles.input}
         value={title}
         onChange={(event) => setTitle(event.target.value)}

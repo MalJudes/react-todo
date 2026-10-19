@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { TodoApp } from './TodoApp'
@@ -174,6 +174,87 @@ describe('TodoApp', () => {
     await addTodo('Two')
     const count = screen.getByText('2 items left')
     expect(count.closest('[aria-live="polite"]')).not.toBeNull()
+  })
+
+  it('does not save a cancelled edit when the input blurs afterwards', async () => {
+    const { user, addTodo } = setup()
+    await addTodo('Buy milk')
+    await user.click(screen.getByRole('button', { name: 'Edit "Buy milk"' }))
+    const input = screen.getByLabelText('Edit "Buy milk"')
+    await user.type(input, ' changed')
+    // Dispatch both inside one act() so the blur lands before React re-renders,
+    // as it can when a browser fires blur while removing the focused input.
+    act(() => {
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    })
+    expect(screen.getByRole('listitem')).not.toHaveTextContent('changed')
+  })
+
+  it('ignores Enter with keyCode 229 (Safari IME) on both inputs', async () => {
+    const { user, addTodo, newTodo } = setup()
+    fireEvent.change(newTodo(), { target: { value: 'にほん' } })
+    fireEvent.keyDown(newTodo(), { key: 'Enter', keyCode: 229 })
+    expect(screen.queryByRole('listitem')).not.toBeInTheDocument()
+
+    await user.clear(newTodo())
+    await addTodo('Buy milk')
+    await user.click(screen.getByRole('button', { name: 'Edit "Buy milk"' }))
+    const input = screen.getByLabelText('Edit "Buy milk"')
+    fireEvent.change(input, { target: { value: 'にほん' } })
+    fireEvent.keyDown(input, { key: 'Enter', keyCode: 229 })
+    expect(screen.getByLabelText('Edit "Buy milk"')).toBeInTheDocument()
+  })
+
+  describe('focus management', () => {
+    it.each(['{Enter}', '{Escape}'])('returns focus to the Edit button after %s', async (key) => {
+      const { user, addTodo } = setup()
+      await addTodo('Buy milk')
+      await user.click(screen.getByRole('button', { name: 'Edit "Buy milk"' }))
+      await user.keyboard(key)
+      expect(screen.getByRole('button', { name: 'Edit "Buy milk"' })).toHaveFocus()
+    })
+
+    it('moves focus to the next todo after deleting one', async () => {
+      const { user, addTodo } = setup()
+      await addTodo('One')
+      await addTodo('Two')
+      await user.click(screen.getByRole('button', { name: 'Delete "One"' }))
+      expect(screen.getByLabelText('Mark "Two" complete')).toHaveFocus()
+    })
+
+    it('moves focus to the previous todo after deleting the last one', async () => {
+      const { user, addTodo } = setup()
+      await addTodo('One')
+      await addTodo('Two')
+      await user.click(screen.getByRole('button', { name: 'Delete "Two"' }))
+      expect(screen.getByLabelText('Mark "One" complete')).toHaveFocus()
+    })
+
+    it('moves focus to the new todo input after deleting the only todo', async () => {
+      const { user, addTodo, newTodo } = setup()
+      await addTodo('One')
+      await user.click(screen.getByRole('button', { name: 'Delete "One"' }))
+      expect(newTodo()).toHaveFocus()
+    })
+
+    it('moves focus to a neighbour after editing a title to blank', async () => {
+      const { user, addTodo } = setup()
+      await addTodo('One')
+      await addTodo('Two')
+      await user.click(screen.getByRole('button', { name: 'Edit "One"' }))
+      await user.clear(screen.getByLabelText('Edit "One"'))
+      await user.keyboard('{Enter}')
+      expect(screen.getByLabelText('Mark "Two" complete')).toHaveFocus()
+    })
+
+    it('moves focus to the new todo input after clearing completed', async () => {
+      const { user, addTodo, newTodo } = setup()
+      await addTodo('One')
+      await user.click(screen.getByLabelText('Mark "One" complete'))
+      await user.click(screen.getByRole('button', { name: 'Clear completed' }))
+      expect(newTodo()).toHaveFocus()
+    })
   })
 
   it('persists todos across remounts', async () => {
