@@ -1,4 +1,5 @@
 import type { Filter } from '../todos/types'
+import { itemsLeft } from './copy'
 import styles from './TodoFooter.module.css'
 
 type Props = {
@@ -24,8 +25,9 @@ export function TodoFooter({
 }: Props) {
   return (
     <footer className={styles.footer}>
-      <span className={styles.count} aria-live="polite">
-        {activeCount} {activeCount === 1 ? 'item' : 'items'} left
+      {/* Announced by the status region in TodoApp, which stays mounted. */}
+      <span className={styles.count} aria-hidden="true">
+        {itemsLeft(activeCount)}
       </span>
       <div className={styles.filters} role="group" aria-label="Filter todos">
         {FILTERS.map(({ value, label }) => (

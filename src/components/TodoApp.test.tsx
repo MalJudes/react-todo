@@ -26,7 +26,7 @@ describe('TodoApp', () => {
     await addTodo('Buy milk')
     expect(screen.getByRole('listitem')).toHaveTextContent('Buy milk')
     expect(newTodo()).toHaveValue('')
-    expect(screen.getByText('1 item left')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/^1 item left$/)
   })
 
   it('ignores a blank title', async () => {
@@ -40,7 +40,7 @@ describe('TodoApp', () => {
     await addTodo('Buy milk')
     expect(screen.queryByRole('button', { name: 'Clear completed' })).not.toBeInTheDocument()
     await user.click(screen.getByLabelText('Mark "Buy milk" complete'))
-    expect(screen.getByText('0 items left')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/^0 items left$/)
     expect(screen.getByRole('button', { name: 'Clear completed' })).toBeInTheDocument()
   })
 
@@ -146,10 +146,10 @@ describe('TodoApp', () => {
     await addTodo('Two')
     const toggleAll = screen.getByLabelText('Mark all complete')
     await user.click(toggleAll)
-    expect(screen.getByText('0 items left')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/^0 items left$/)
     expect(toggleAll).toBeChecked()
     await user.click(toggleAll)
-    expect(screen.getByText('2 items left')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/^2 items left$/)
   })
 
   it('deletes a todo', async () => {
@@ -168,12 +168,35 @@ describe('TodoApp', () => {
     expect(titles()).toEqual([expect.stringContaining('Keep')])
   })
 
-  it('announces the remaining count politely', async () => {
+  it('keeps a status region mounted so the first count is announced', async () => {
     const { addTodo } = setup()
+    const status = screen.getByRole('status')
+    expect(status).toHaveTextContent(/^$/)
     await addTodo('One')
-    await addTodo('Two')
-    const count = screen.getByText('2 items left')
-    expect(count.closest('[aria-live="polite"]')).not.toBeNull()
+    expect(screen.getByRole('status')).toBe(status)
+    expect(status).toHaveTextContent(/^1 item left$/)
+  })
+
+  it.each([
+    ['Active', 'No active todos.'],
+    ['Completed', 'No completed todos.'],
+  ])('explains an empty %s filter', async (filterName, message) => {
+    const { user, addTodo } = setup()
+    await addTodo('One')
+    if (filterName === 'Active') await user.click(screen.getByLabelText('Mark "One" complete'))
+    await user.click(screen.getByRole('button', { name: filterName }))
+    expect(screen.getByText(message)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'All' }))
+    expect(screen.queryByText(message)).not.toBeInTheDocument()
+  })
+
+  it('labels toggle-all by what it will do', async () => {
+    const { user, addTodo } = setup()
+    await addTodo('One')
+    await user.click(screen.getByLabelText('Mark all complete'))
+    expect(screen.getByLabelText('Mark all active')).toBeChecked()
+    await user.click(screen.getByLabelText('Mark all active'))
+    expect(screen.getByLabelText('Mark all complete')).not.toBeChecked()
   })
 
   it('does not save a cancelled edit when the input blurs afterwards', async () => {

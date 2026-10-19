@@ -42,7 +42,7 @@ type Todo = { id: string; title: string; completed: boolean; createdAt: number }
 type Filter = 'all' | 'active' | 'completed';
 ```
 
-IDs come from `crypto.randomUUID()`.
+IDs come from `crypto.randomUUID()`, with a `getRandomValues`-based v4 UUID fallback where it is unavailable (plain-http, non-secure contexts).
 
 ## Architecture
 
@@ -103,6 +103,7 @@ Components are presentational: they receive data and callbacks via props. `TodoA
 - Completed todos: strikethrough + muted color.
 - Subtle hover states; visible `:focus-visible` outlines on all controls.
 - Empty state: when there are no todos, show a short prompt and hide the list and footer.
+- Empty filter: when a filter matches nothing, show "No active todos." or "No completed todos."
 
 ## Accessibility
 - `<form>` with a labeled input (visually hidden label "New todo").
@@ -110,9 +111,9 @@ Components are presentational: they receive data and callbacks via props. `TodoA
   `Mark "{title}" complete`; delete `<button>` named `Delete "{title}"`; edit button named
   `Edit "{title}"`.
 - Edit field labeled `Edit "{title}"`, auto-focused when editing starts.
-- Toggle-all checkbox labeled "Mark all complete".
+- Toggle-all checkbox labeled "Mark all complete", or "Mark all active" when every todo is complete.
 - Filter buttons use `aria-pressed`.
-- Items-left count in an `aria-live="polite"` region.
+- Items-left count announced through an always-mounted `role="status"` region (so the first count is announced); the visible count is `aria-hidden`.
 
 ## Testing
 TDD: tests written before implementation for each unit.

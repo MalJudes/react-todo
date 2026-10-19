@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { countActive, filterTodos } from '../todos/filters'
 import type { Filter } from '../todos/types'
 import { useTodos } from '../todos/useTodos'
+import { itemsLeft } from './copy'
 import styles from './TodoApp.module.css'
 import { NewTodoForm } from './NewTodoForm'
 import { TodoFooter } from './TodoFooter'
@@ -69,6 +70,7 @@ export function TodoApp() {
               onEdit={handleEdit}
               onRemove={handleRemove}
             />
+            {visibleTodos.length === 0 && <p className={styles.empty}>No {filter} todos.</p>}
             <TodoFooter
               activeCount={activeCount}
               hasCompleted={activeCount < todos.length}
@@ -79,6 +81,11 @@ export function TodoApp() {
           </>
         )}
       </div>
+      {/* Always mounted: screen readers skip text in a live region that
+          appears already filled, so the first count would go unannounced. */}
+      <p role="status" className="visually-hidden">
+        {todos.length > 0 ? itemsLeft(activeCount) : ''}
+      </p>
     </main>
   )
 }

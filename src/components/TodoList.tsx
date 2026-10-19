@@ -16,7 +16,7 @@ export function TodoList({ todos, allCompleted, onToggleAll, onToggle, onEdit, o
     <section>
       <label className={styles.toggleAll}>
         <input type="checkbox" checked={allCompleted} onChange={onToggleAll} />
-        Mark all complete
+        {allCompleted ? 'Mark all active' : 'Mark all complete'}
       </label>
       <ul className={styles.list}>
         {todos.map((todo) => (
